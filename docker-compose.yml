@@ -35,3 +35,16 @@ services:
       - UP_UNIFI_DEFAULT_PASS=${UP_UNIFI_DEFAULT_PASS}
     ports:
       - "9130:9130"
+    restart: unless-stopped
+
+  synology-exporter:
+    image: veecode/synology_exporter
+    container_name: synology-exporter
+    user: 996:988
+    environment:
+      - SYNOLOGY_USER=${SYNOLOGY_USER}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
+    ports:
+      - "9101:9101"
+    restart: unless-stopped
