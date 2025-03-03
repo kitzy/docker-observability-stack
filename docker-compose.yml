@@ -20,10 +20,9 @@ services:
       - PUID=996
       - PGID=988
       - TZ=America/New_York
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
   volumes:
     - /mnt/data/docker/volumes/grafana:/var/lib/grafana
-  environment:
-    - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
   ports:
     - "3000:3000"
   restart: unless-stopped
