@@ -37,14 +37,12 @@ services:
       - "9130:9130"
     restart: unless-stopped
 
-  synology-exporter:
-    image: markdumay/synology-exporter
-    container_name: synology-exporter
+  snmp-exporter:
+    image: prom/snmp-exporter
+    container_name: snmp-exporter
     user: 996:988
-    environment:
-      - SYNOLOGY_USER=${SYNOLOGY_USER}
-      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
-      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
     ports:
-      - "9101:9101"
+      - "9116:9116"
+    volumes:
+      - /mnt/data/docker/volumes/prometheus/snmp.yml:/etc/snmp_exporter/snmp.yml
     restart: unless-stopped
