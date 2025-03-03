@@ -2,9 +2,8 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: prometheus
+    user: docker:docker
     environment:
-      - PUID=996
-      - PGID=988
       - TZ=America/New_York
     volumes:
       - /mnt/data/docker/volumes/prometheus:/etc/prometheus
@@ -15,9 +14,8 @@ services:
   grafana:
     image: grafana/grafana
     container_name: grafana
+    user: docker:docker
     environment:
-      - PUID=996
-      - PGID=988
       - TZ=America/New_York
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
     volumes:
