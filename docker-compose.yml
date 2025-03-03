@@ -6,7 +6,8 @@ services:
     environment:
       - TZ=America/New_York
     volumes:
-      - /mnt/data/docker/volumes/prometheus:/etc/prometheus
+      - /mnt/data/docker/volumes/prometheus/data:/prometheus
+      - /mnt/data/docker/volumes/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     restart: unless-stopped
