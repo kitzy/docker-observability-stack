@@ -2,7 +2,7 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: prometheus
-    user: docker:docker
+    user: 996:988
     environment:
       - TZ=America/New_York
     volumes:
@@ -14,7 +14,7 @@ services:
   grafana:
     image: grafana/grafana
     container_name: grafana
-    user: docker:docker
+    user: 996:988
     environment:
       - TZ=America/New_York
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
