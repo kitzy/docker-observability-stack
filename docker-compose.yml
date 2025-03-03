@@ -14,15 +14,15 @@ services:
     restart: unless-stopped
     
   grafana:
-  image: grafana/grafana
-  container_name: grafana
-  environment:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
       - PUID=996
       - PGID=988
       - TZ=America/New_York
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
-  volumes:
-    - /mnt/data/docker/volumes/grafana:/var/lib/grafana
-  ports:
-    - "3000:3000"
-  restart: unless-stopped
+    volumes:
+      - /mnt/data/docker/volumes/grafana:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
