@@ -24,3 +24,14 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+
+  unifi-poller:
+    image: golift/unifi-poller
+    container_name: unifi-poller
+    user: 996:988
+    environment:
+      - UP_UNIFI_DEFAULT_URL=${UP_UNIFI_DEFAULT_URL}
+      - UP_UNIFI_DEFAULT_USER=${UP_UNIFI_DEFAULT_USER}
+      - UP_UNIFI_DEFAULT_PASS=${UP_UNIFI_DEFAULT_PASS}
+    ports:
+      - "9130:9130"
