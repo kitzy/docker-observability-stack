@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
 
   synology-exporter:
-    image: veecode/synology_exporter
+    image: markdumay/synology-exporter
     container_name: synology-exporter
     user: 996:988
     environment:
