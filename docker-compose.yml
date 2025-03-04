@@ -6,7 +6,7 @@ services:
     environment:
       - INIT_ASSETS=1
     volumes:
-      - /path/to/config/dir:/www/assets # Make sure your local config directory exists
+      - /mnt/data/docker/volumes/homer:/www/assets # Make sure your local config directory exists
     ports:
       - 8088:8080
     restart: unless-stopped
