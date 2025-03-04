@@ -1,16 +1,4 @@
 services:
-  homer:
-    image: b4bz/homer
-    container_name: homer
-    user: 996:988
-    environment:
-      - INIT_ASSETS=1
-    volumes:
-      - /mnt/data/docker/volumes/homer:/www/assets # Make sure your local config directory exists
-    ports:
-      - 8088:8080
-    restart: unless-stopped
-    
   prometheus:
     image: prom/prometheus
     container_name: prometheus
