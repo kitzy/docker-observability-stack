@@ -2,9 +2,9 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: prometheus
-    user: 996:988
+    user: ${PUID}:${PGID}
     environment:
-      - TZ=America/New_York
+      - TZ=${TZ}
     volumes:
       - /mnt/data/docker/volumes/prometheus/data:/prometheus
       - /mnt/data/docker/volumes/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -15,9 +15,9 @@ services:
   grafana:
     image: grafana/grafana
     container_name: grafana
-    user: 996:988
+    user: ${PUID}:${PGID}
     environment:
-      - TZ=America/New_York
+      - TZ=${TZ}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
     volumes:
       - /mnt/data/docker/volumes/grafana:/var/lib/grafana
@@ -28,8 +28,9 @@ services:
   unifi-poller:
     image: golift/unifi-poller
     container_name: unifi-poller
-    user: 996:988
+    user: ${PUID}:${PGID}
     environment:
+      - TZ=${TZ}
       - UP_UNIFI_DEFAULT_URL=${UP_UNIFI_DEFAULT_URL}
       - UP_UNIFI_DEFAULT_USER=${UP_UNIFI_DEFAULT_USER}
       - UP_UNIFI_DEFAULT_PASS=${UP_UNIFI_DEFAULT_PASS}
@@ -40,7 +41,9 @@ services:
   snmp-exporter:
     image: prom/snmp-exporter
     container_name: snmp-exporter
-    user: 996:988
+    user: ${PUID}:${PGID}
+    environment:
+      - TZ=${TZ}
     ports:
       - "9116:9116"
     volumes:
