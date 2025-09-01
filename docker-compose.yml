@@ -5,20 +5,25 @@ services:
     user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
+    command:
+      - --web.enable-lifecycle
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
     volumes:
       - /mnt/data/docker/volumes/prometheus/data:/prometheus
       - /mnt/data/docker/volumes/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/data/docker/volumes/prometheus/file_sd:/etc/prometheus/file_sd:ro
     ports:
       - "9090:9090"
     restart: unless-stopped
-    
+
   grafana:
     image: grafana/grafana
     container_name: grafana
     user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     volumes:
       - /mnt/data/docker/volumes/grafana:/var/lib/grafana
     ports:
@@ -36,6 +41,12 @@ services:
       - UP_UNIFI_DEFAULT_PASS=${UP_UNIFI_DEFAULT_PASS}
     ports:
       - "9130:9130"
+    labels:
+      prom.scrape: "true"
+      prom.port: "9130"
+      prom.job: "unifi"
+      prom.path: "/metrics"
+      prom.scheme: "http"
     restart: unless-stopped
 
   snmp-exporter:
@@ -48,4 +59,74 @@ services:
       - "9116:9116"
     volumes:
       - /mnt/data/docker/volumes/prometheus/snmp.yml:/etc/snmp_exporter/snmp.yml
+    labels:
+      prom.scrape: "true"      # scrape exporter self-metrics
+      prom.port: "9116"
+      prom.job: "snmp_exporter"
+      prom.path: "/metrics"
+      prom.scheme: "http"
     restart: unless-stopped
+
+  # Discovery sidecar that writes the file_sd targets for Prometheus
+  prom-sd:
+    image: docker:26-cli
+    container_name: prom-sd
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/data/docker/volumes/prometheus/file_sd:/out
+      - /mnt/data/docker/volumes/prometheus/file_sd/gen_docker_sd.sh:/gen.sh:ro
+    entrypoint: ["/bin/sh","-c"]
+    command: >
+      apk add --no-cache jq >/dev/null &&
+      while true; do /gen.sh || true; sleep 30; done
+
+  # Synology metrics (DSM credentials via .env)
+  synology-exporter:
+    image: czerwonk/synology-exporter:latest
+    container_name: synology-exporter
+    restart: unless-stopped
+    environment:
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
+      - SYNOLOGY_USER=${SYNOLOGY_USER}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+      - SYNOLOGY_HTTPS=true
+      - SYNOLOGY_SKIP_VERIFY=false
+    labels:
+      prom.scrape: "true"
+      prom.port: "9101"
+      prom.job: "synology"
+      prom.path: "/metrics"
+
+  # Host metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|run|var/lib/docker/.+)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    labels:
+      prom.scrape: "true"
+      prom.port: "9100"
+      prom.job: "node"
+      prom.path: "/metrics"
+
+  # Container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    labels:
+      prom.scrape: "true"
+      prom.port: "8080"
+      prom.job: "cadvisor"
+      prom.path: "/metrics"
