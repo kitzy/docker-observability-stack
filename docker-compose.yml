@@ -44,8 +44,12 @@ services:
     user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
+    command:
+    - --log.level=debug
+    - --config.file=/etc/snmp_exporter/snmp.yml          # built-in default (modules incl. if_mib)
+    - --config.file=/etc/snmp_exporter/snmp.auth.yml  # your auths only
     ports:
       - "9116:9116"
     volumes:
-      - /mnt/data/docker/volumes/prometheus/snmp.yml:/etc/snmp_exporter/snmp.yml
+      - /mnt/data/docker/volumes/prometheus/snmp.auth.yml:/etc/snmp_exporter/snmp.auth.yml:ro
     restart: unless-stopped
