@@ -53,3 +53,50 @@ services:
     volumes:
       - /mnt/data/docker/volumes/prometheus/snmp.auth.yml:/etc/snmp_exporter/snmp.auth.yml:ro
     restart: unless-stopped
+
+  # Host metrics: CPU, RAM, disks, FS, net, temps (via hwmon)
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: node-exporter
+    command:
+      - --path.rootfs=/host
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.systemd
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
+    ports:
+      - "9100:9100"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /run:/host/run:ro
+    restart: unless-stopped
+
+  # Container CPU/RAM/net + per-container status-ish (last_seen)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    restart: unless-stopped
+
+  # Disk health/SMART
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter:latest
+    container_name: smartctl-exporter
+    privileged: true
+    ports:
+      - "9633:9633"
+    volumes:
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    restart: unless-stopped
