@@ -1,57 +1,75 @@
+networks:
+  observability:
+    driver: bridge
+    internal: true
+  proxy:
+    external: true
+    name: proxy
+
+volumes:
+  prometheus:
+  grafana:
+
 services:
   prometheus:
     image: prom/prometheus
     container_name: prometheus
-    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
     volumes:
-      - /mnt/data/docker/volumes/prometheus/data:/prometheus
-      - /mnt/data/docker/volumes/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
+      - prometheus:/prometheus
+      # read-only config under your observability tree
+      - ${CONFIG_ROOT}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${CONFIG_ROOT}/prometheus/rules:/etc/prometheus/rules:ro
+      - ${CONFIG_ROOT}/prometheus/files_sd:/etc/prometheus/files_sd:ro
+    networks:
+      - observability
+      - proxy
     restart: unless-stopped
-    
+
   grafana:
     image: grafana/grafana
     container_name: grafana
-    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD} 
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     volumes:
-      - /mnt/data/docker/volumes/grafana:/var/lib/grafana
-    ports:
-      - "3000:3000"
+      - grafana:/var/lib/grafana
+      - ${CONFIG_ROOT}/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${CONFIG_ROOT}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - observability
+      - proxy
     restart: unless-stopped
 
   unifi-poller:
     image: golift/unifi-poller
     container_name: unifi-poller
-    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
       - UP_UNIFI_DEFAULT_URL=${UP_UNIFI_DEFAULT_URL}
       - UP_UNIFI_DEFAULT_USER=${UP_UNIFI_DEFAULT_USER}
       - UP_UNIFI_DEFAULT_PASS=${UP_UNIFI_DEFAULT_PASS}
-    ports:
-      - "9130:9130"
+    networks:
+      - observability
     restart: unless-stopped
 
   snmp-exporter:
     image: prom/snmp-exporter
     container_name: snmp-exporter
-    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ}
     command:
-    - --log.level=debug
-    - --config.file=/etc/snmp_exporter/snmp.yml          # built-in default (modules incl. if_mib)
-    - --config.file=/etc/snmp_exporter/snmp.auth.yml  # your auths only
-    ports:
-      - "9116:9116"
+      - --log.level=debug
+      - --config.file=/etc/snmp_exporter/snmp.yml
+      - --config.file=/etc/snmp_exporter/snmp.auth.yml
     volumes:
-      - /mnt/data/docker/volumes/prometheus/snmp.auth.yml:/etc/snmp_exporter/snmp.auth.yml:ro
+      # supply your auths (keep 0600 and out of git)
+      - ${CONFIG_ROOT}/exporters/snmp-exporter/snmp.auth.yml:/etc/snmp_exporter/snmp.auth.yml:ro
+      # if you maintain custom modules, also mount snmp.yml from your tree:
+      # - ${CONFIG_ROOT}/exporters/snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+    networks:
+      - observability
     restart: unless-stopped
 
   # Host metrics: CPU, RAM, disks, FS, net, temps (via hwmon)
@@ -64,14 +82,14 @@ services:
       - --path.sysfs=/host/sys
       - --collector.systemd
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
-    ports:
-      - "9100:9100"
     pid: host
     volumes:
       - /:/host:ro,rslave
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /run:/host/run:ro
+    networks:
+      - observability
     restart: unless-stopped
 
   # Container CPU/RAM/net + per-container status-ish (last_seen)
@@ -79,14 +97,14 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
     privileged: true
-    ports:
-      - "8083:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    networks:
+      - observability
     restart: unless-stopped
 
   # Disk health/SMART
@@ -94,9 +112,9 @@ services:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
     privileged: true
-    ports:
-      - "9633:9633"
     volumes:
       - /dev:/dev
       - /run/udev:/run/udev:ro
+    networks:
+      - observability
     restart: unless-stopped
